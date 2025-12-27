@@ -137,59 +137,53 @@ def load_checkpoint():
 
 def main():
     print("\n" + "=" * 60)
-    print(f"🚀 MEGA PACKER - {TRIALS_PER_GROUP} Trials + Checkpoints")
+    print(f"MEGA PACKER - {TRIALS_PER_GROUP} Trials + Checkpoints")
     print("=" * 60)
 
-    # Check for resume
     checkpoint = load_checkpoint()
     if checkpoint:
-        print(f"📂 Resuming from n={checkpoint['last_n']+1}, total={checkpoint['total_score']:.2f}")
+        print(f"[RESUME] from n={checkpoint['last_n']+1}, total={checkpoint['total_score']:.2f}")
         results = checkpoint['results']
         start_n = checkpoint['last_n'] + 1
         total = checkpoint['total_score']
     else:
-        print("🆕 Starting fresh run...")
+        print("[NEW] Starting fresh run...")
         results = {}
         start_n = 1
         total = 0.0
 
-    random.seed(42 + start_n)  # Reproducible but different if resuming
+    random.seed(42 + start_n)
     start_time = time.time()
 
     for n in range(start_n, 201):
         placed, score = pack_best_of_trials(n)
         total += score
-
-        # Store only coords (not polygons - save memory)
         results[str(n)] = [{'x': str(t['x']), 'y': str(t['y']), 'deg': str(t['deg'])} for t in placed]
 
-        # Save checkpoint every 5 groups
         if n % 5 == 0:
             save_checkpoint(results, n, total)
-            gc.collect()  # Free memory
+            gc.collect()
 
         if n <= 5 or n % 25 == 0:
             elapsed = time.time() - start_time
             eta = (elapsed / (n - start_n + 1)) * (200 - n) if n > start_n else 0
             print(f"   n={n:3d}: score={score:.3f} | total={total:.2f} | ETA: {eta/60:.1f}min")
 
-    print(f"\n⏱️  Time: {(time.time() - start_time)/60:.1f}min")
-    print(f"📊 TOTAL: {total:.2f}")
+    print(f"\nTime: {(time.time() - start_time)/60:.1f}min")
+    print(f"TOTAL: {total:.2f}")
 
-    # Save final CSV
     rows = []
     for n in range(1, 201):
         for i, t in enumerate(results[str(n)]):
             rows.append({'id': f'{n:03d}_{i}', 'x': f's{t["x"]}', 'y': f's{t["y"]}', 'deg': f's{t["deg"]}'})
 
     pd.DataFrame(rows).to_csv(CSV_FILE, index=False)
-    print(f"\n📄 Saved: {CSV_FILE}")
-    print(f"🎯 Target: 69.13 | Gap: {total - 69.13:.2f}")
+    print(f"\nSaved: {CSV_FILE}")
+    print(f"Target: 69.13 | Gap: {total - 69.13:.2f}")
 
-    # Clean up checkpoint
     if os.path.exists(CHECKPOINT_FILE):
         os.remove(CHECKPOINT_FILE)
-        print("🧹 Checkpoint cleaned up")
+        print("Checkpoint cleaned up")
 
 
 if __name__ == "__main__":
